@@ -17,8 +17,6 @@ import java.io.ByteArrayInputStream;
 @Service
 public class Mp3MetadataExtractor {
 
-    private static final String AUDIO_MPEG_MIME = "audio/mpeg";
-
     public SongMetadataDto extract(byte[] data) {
         if (data == null || data.length == 0) {
             throw new InvalidMp3Exception("MP3 data is empty");
@@ -35,7 +33,7 @@ public class Mp3MetadataExtractor {
             String mimeType = metadata.get(Metadata.CONTENT_TYPE);
             if (mimeType == null || !mimeType.startsWith("audio/mpeg")) {
                 throw new InvalidMp3Exception(
-                        "Uploaded file is not a valid MP3 (detected MIME: " + mimeType + ")");
+                        "Invalid file format: " + mimeType + ". Only MP3 files are allowed");
             }
 
             String name = getFirstNonNull(
@@ -76,7 +74,6 @@ public class Mp3MetadataExtractor {
                     metadata.get("dc:date")
             );
 
-            // Normalize year to 4 digits if it contains a full date
             if (year != null && year.length() > 4) {
                 year = year.substring(0, 4);
             }
@@ -95,27 +92,19 @@ public class Mp3MetadataExtractor {
         } catch (InvalidMp3Exception ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new InvalidMp3Exception("Failed to parse MP3 file: " + ex.getMessage(), ex);
+            throw new InvalidMp3Exception("Invalid file format: unknown. Only MP3 files are allowed", ex);
         }
     }
 
-    /**
-     * Converts a duration value (in seconds, possibly as a decimal string) to mm:ss format.
-     * Tika may return duration as milliseconds or seconds depending on the tag.
-     */
     private String parseDuration(String durationRaw) {
         if (durationRaw == null || durationRaw.isBlank()) {
             return "00:00";
         }
-
         try {
             double durationSeconds = Double.parseDouble(durationRaw.trim());
-
-            // Tika's XMPDM.DURATION is in milliseconds for some formats; treat > 10000 as ms
             if (durationSeconds > 10000) {
                 durationSeconds = durationSeconds / 1000.0;
             }
-
             long totalSeconds = Math.round(durationSeconds);
             long minutes = totalSeconds / 60;
             long seconds = totalSeconds % 60;

@@ -3,15 +3,17 @@ package com.example.song.service;
 import com.example.song.dto.DeleteIdsResponse;
 import com.example.song.dto.SongDto;
 import com.example.song.dto.SongIdResponse;
+import com.example.song.exception.SongAlreadyExistsException;
 import com.example.song.exception.SongNotFoundException;
 import com.example.song.model.Song;
 import com.example.song.repository.SongRepository;
+import com.example.song.validation.IdParser;
+import com.example.song.validation.SongValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -20,10 +22,15 @@ import java.util.List;
 public class SongService {
 
     private final SongRepository songRepository;
+    private final SongValidator songValidator;
 
     @Transactional
     public SongIdResponse createSong(SongDto dto) {
-        validateSongDto(dto);
+        songValidator.validate(dto);
+
+        if (dto.getId() != null && songRepository.existsById(dto.getId())) {
+            throw new SongAlreadyExistsException("Metadata for resource ID=" + dto.getId() + " already exists");
+        }
 
         Song song = Song.builder()
                 .id(dto.getId())
@@ -40,39 +47,16 @@ public class SongService {
     }
 
     @Transactional(readOnly = true)
-    public SongDto getSong(Long id) {
+    public SongDto getSong(String rawId) {
+        long id = IdParser.parsePathId(rawId);
         Song song = songRepository.findById(id)
-                .orElseThrow(() -> new SongNotFoundException("Song not found with id: " + id));
-
+                .orElseThrow(() -> new SongNotFoundException("Song metadata for ID=" + id + " not found"));
         return toDto(song);
     }
 
     @Transactional
     public DeleteIdsResponse deleteSongs(String idsParam) {
-        if (idsParam == null || idsParam.isBlank()) {
-            throw new IllegalArgumentException("Query parameter 'id' must not be empty");
-        }
-
-        if (idsParam.length() > 200) {
-            throw new IllegalArgumentException(
-                    "Query parameter 'id' exceeds maximum allowed length of 200 characters");
-        }
-
-        List<Long> requestedIds;
-        try {
-            requestedIds = Arrays.stream(idsParam.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .map(Long::parseLong)
-                    .toList();
-        } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException(
-                    "Invalid ID format in query parameter 'id': " + idsParam);
-        }
-
-        if (requestedIds.isEmpty()) {
-            throw new IllegalArgumentException("No valid IDs provided");
-        }
+        List<Long> requestedIds = IdParser.parseCsvIds(idsParam);
 
         List<Song> existing = songRepository.findAllByIdIn(requestedIds);
         List<Long> existingIds = existing.stream().map(Song::getId).toList();
@@ -83,15 +67,6 @@ public class SongService {
         }
 
         return new DeleteIdsResponse(existingIds);
-    }
-
-    private void validateSongDto(SongDto dto) {
-        if (dto.getId() == null) {
-            throw new IllegalArgumentException("Song id must not be null");
-        }
-        if (dto.getName() == null || dto.getName().isBlank()) {
-            throw new IllegalArgumentException("Song name must not be blank");
-        }
     }
 
     private SongDto toDto(Song song) {

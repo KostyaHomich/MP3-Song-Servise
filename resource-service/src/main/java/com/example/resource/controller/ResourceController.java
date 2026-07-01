@@ -28,19 +28,7 @@ public class ResourceController {
     @GetMapping(value = "/{id}", produces = "audio/mpeg")
     public ResponseEntity<byte[]> getResource(@PathVariable String id) {
         log.info("GET /resources/{}", id);
-
-        long resourceId;
-        try {
-            resourceId = Long.parseLong(id);
-        } catch (NumberFormatException ex) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        if (resourceId <= 0) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        byte[] data = resourceService.getResourceData(resourceId);
+        byte[] data = resourceService.getResourceData(id);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("audio/mpeg"));

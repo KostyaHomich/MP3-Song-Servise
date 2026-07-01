@@ -21,18 +21,18 @@ public class Song {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "name")
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "artist")
+    @Column(name = "artist", nullable = false, length = 100)
     private String artist;
 
-    @Column(name = "album")
+    @Column(name = "album", nullable = false, length = 100)
     private String album;
 
-    @Column(name = "duration")
+    @Column(name = "duration", nullable = false, length = 5)
     private String duration;
 
-    @Column(name = "year")
+    @Column(name = "year", nullable = false, length = 4)
     private String year;
 }

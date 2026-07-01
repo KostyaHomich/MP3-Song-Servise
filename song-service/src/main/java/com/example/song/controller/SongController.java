@@ -6,6 +6,7 @@ import com.example.song.dto.SongIdResponse;
 import com.example.song.service.SongService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,27 +20,15 @@ public class SongController {
 
     @PostMapping
     public ResponseEntity<SongIdResponse> createSong(@RequestBody SongDto dto) {
-        log.info("POST /songs - id={}, name={}", dto.getId(), dto.getName());
+        log.info("POST /songs - id={}", dto.getId());
         SongIdResponse response = songService.createSong(dto);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<SongDto> getSong(@PathVariable String id) {
         log.info("GET /songs/{}", id);
-
-        long songId;
-        try {
-            songId = Long.parseLong(id);
-        } catch (NumberFormatException ex) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        if (songId <= 0) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        SongDto dto = songService.getSong(songId);
+        SongDto dto = songService.getSong(id);
         return ResponseEntity.ok(dto);
     }
 
