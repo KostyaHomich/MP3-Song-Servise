@@ -21,7 +21,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
@@ -32,7 +32,7 @@ spring:
       max-request-size: 100MB
 
 song-service:
-  base-url: ${SONG_SERVICE_URL:http://song-service:8082}
+  base-url: ${SONG_SERVICE_URL:http://localhost:8082}
 
 logging:
   level:
